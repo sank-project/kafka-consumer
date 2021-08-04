@@ -1,7 +1,11 @@
 package consumer
 
 import (
+	"context"
+	"encoding/json"
 	"os"
+
+	"kafka-consumer/helper"
 
 	"github.com/Shopify/sarama"
 	"github.com/sirupsen/logrus"
@@ -12,9 +16,20 @@ type KafkaConsumer struct {
 	Consumer sarama.Consumer
 }
 
+type Post struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+	Body  string `json:"body"`
+}
+
 //Consume function to consume message from kafka
 
 func (c *KafkaConsumer) Consume(topics []string, signals chan os.Signal) {
+
+	//connect to mongodb
+
+	collection := helper.ConnectDB()
+
 	chanMessage := make(chan *sarama.ConsumerMessage, 256)
 
 	for _, topic := range topics {
@@ -35,7 +50,20 @@ ConsumerLoop:
 	for {
 		select {
 		case msg := <-chanMessage:
-			logrus.Infof("New message from kafka, message %v", string(msg.Value))
+			logrus.Infof(string(msg.Value))
+
+			insertDB := &Post{}
+			err := json.Unmarshal(msg.Value, insertDB)
+			if err != nil {
+				logrus.Panic(err)
+			}
+			// insert our book model.
+			_, err = collection.InsertOne(context.TODO(), insertDB)
+			if err != nil {
+				logrus.Panic(err)
+			}
+			logrus.Printf("Successfull insert to mongoDB")
+
 		case sig := <-signals:
 			if sig == os.Interrupt {
 				break ConsumerLoop

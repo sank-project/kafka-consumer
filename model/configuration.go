@@ -12,6 +12,7 @@ type Configuration struct {
 	HttpPort        string
 	KafkaConnection string
 	KakkaTopic      string
+	MongoURL        string
 }
 
 // GetConfiguration method basically populate configuration information from .env and return Configuration model
@@ -26,6 +27,7 @@ func GetConfiguration() Configuration {
 		os.Getenv("HTTP_PORT"),
 		os.Getenv("KAFKA_CONNECTION"),
 		os.Getenv("KAFKA_TOPIC"),
+		os.Getenv("MONGODB_URL"),
 	}
 
 	return configuration
